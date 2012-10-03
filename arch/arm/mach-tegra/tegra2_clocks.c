@@ -2401,6 +2401,8 @@ struct clk tegra_list_periph_clks[] = {
 	PERIPH_CLK("timer",	"timer",		NULL,	5,	0,	0x31E,	26000000,  mux_clk_m,			0),
 	PERIPH_CLK("i2s1",	"tegra20-i2s.0",	NULL,	11,	0x100,	0x31E,	26000000,  mux_pllaout0_audio2x_pllp_clkm,	MUX | DIV_U71 | PERIPH_ON_APB),
 	PERIPH_CLK("i2s2",	"tegra20-i2s.1",	NULL,	18,	0x104,	0x31E,	26000000,  mux_pllaout0_audio2x_pllp_clkm,	MUX | DIV_U71 | PERIPH_ON_APB),
+	PERIPH_CLK("3d",	"3d",	NULL,	24,	0x158,	0x31E,	400000000, mux_pllm_pllc_pllp_plla,	MUX | DIV_U71 | PERIPH_MANUAL_RESET), /* scales with voltage and process_id */
+	PERIPH_CLK("2d",	"2d",	NULL,	21,	0x15c,	0x31E,	320000000, mux_pllm_pllc_pllp_plla,	MUX | DIV_U71), /* scales with voltage and process_id */	
 	PERIPH_CLK("fuse",	"fuse-tegra",		"fuse",	39,	0,	0x31E,	26000000,  mux_clk_m,			PERIPH_ON_APB),
 	PERIPH_CLK("fuse_burn",	"fuse-tegra",		"fuse_burn",	39,	0,	0x31E,	26000000,  mux_clk_m,		PERIPH_ON_APB),
 	PERIPH_CLK("kfuse",	"kfuse-tegra",		NULL,	40,	0,	0x31E,  26000000,  mux_clk_m,			0),
