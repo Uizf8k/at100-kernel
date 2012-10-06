@@ -36,8 +36,8 @@
 #define dprintk(msg...) cpufreq_debug_printk(CPUFREQ_DEBUG_CORE, \
 						"cpufreq-core", msg)
 
-/* Initial implementation of userspace voltage control */
-#if defined(CONFIG_TEGRA_OVERCLOCK)
+/* Initial implementation of userspace voltage control - blocked for stability testing */
+/*#if defined(CONFIG_TEGRA_OVERCLOCK)
 #define FREQCOUNT 11
 #else
 #define FREQCOUNT 10
@@ -46,18 +46,18 @@
 #define CPUMVMAX 1400
 #define CPUMVMIN 700
 #if defined(CONFIG_TEGRA_OVERCLOCK)
-int cpufrequency[FREQCOUNT] = { 216000, 312000, 456000, 608000, /*750000,*/ 760000, 816000, 912000, 1000000, 1200000, 1408000, 1504000 };
-#else
+int cpufrequency[FREQCOUNT] = { 216000, 312000, 456000, 608000, /*750000,*/ /*760000, 816000, 912000, 1000000, 1200000, 1408000, 1504000 };
+/*#else
 int cpufrequency[FREQCOUNT] = { 216000, 312000, 456000, 608000, 750000, 760000, 816000, 912000, 1000000, 1200000 };
 #endif
 
 #if defined(CONFIG_TEGRA_OVERCLOCK)
-int cpuvoltage[FREQCOUNT] = {750, 775, 800, 825, /*850,*/ 875, 900, 925, 950, 1025, 1175, 1275/*, 1325*/};
-#else
+int cpuvoltage[FREQCOUNT] = {750, 775, 800, 825, /*850,*/ /*875, 900, 925, 950, 1025, 1175, 1275/*, 1325*/};
+/*#else
 int cpuvoltage[FREQCOUNT] = {750, 775, 800, 825, 850, 875, 900, 925, 950, 975, 1000, 1025, 1050, 1100, 1125};
 #endif
 
-int cpuuvoffset[FREQCOUNT] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+/*int cpuuvoffset[FREQCOUNT] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; */
 
 /**
  * The "cpufreq driver" - the arch- or hardware-dependent low
@@ -691,7 +691,8 @@ static ssize_t show_bios_limit(struct cpufreq_policy *policy, char *buf)
 	return sprintf(buf, "%u\n", policy->cpuinfo.max_freq);
 }
 
-static ssize_t show_frequency_voltage_table(struct cpufreq_policy *policy, char *buf)
+/* blocked for stability testing */
+/*static ssize_t show_frequency_voltage_table(struct cpufreq_policy *policy, char *buf)
 {
 	char *table = buf;
 	int i;
@@ -736,7 +737,7 @@ cpuuvoffset[FREQCOUNT-1-i] = tmptable[i];
 }
 }
 	return count;
-}
+}*/
 
 cpufreq_freq_attr_ro_perm(cpuinfo_cur_freq, 0400);
 cpufreq_freq_attr_ro(cpuinfo_min_freq);
