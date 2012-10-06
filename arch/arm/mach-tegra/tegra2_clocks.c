@@ -1939,11 +1939,11 @@ static struct clk_pll_freq_table tegra_pll_x_freq_table[] = {
 	{ 19200000, 1504000000, 940, 12, 1, 8},
 	{ 26000000, 1504000000, 752, 13, 1, 12}, */
 
-	/* 1.4 GHz */
-	{ 12000000, 1408000000, 700, 6, 1, 12},
-	{ 13000000, 1408000000, 969, 9, 1, 12},
-	{ 19200000, 1408000000, 875, 12, 1, 8},
-	{ 26000000, 1408000000, 700, 13, 1, 12},
+	/* 1.472 GHz */
+	{ 12000000, 1472000000, 736, 6, 1, 12},
+	{ 13000000, 1472000000, 906, 9, 1, 12},
+	{ 19200000, 1472000000, 920, 12, 1, 8},
+	{ 26000000, 1472000000, 736, 13, 1, 12},
 	#endif
 	/* 1.2 GHz */
 	{ 12000000, 1200000000, 600,  6,  1, 12},
@@ -2011,7 +2011,7 @@ static struct clk tegra_pll_x = {
 	#if defined(CONFIG_TEGRA_OVERCLOCK)
 	/* Blocked for being unstable new max set below */
 	/* .max_rate  = 1504000000, */
-	.max_rate = 1408000000,
+	.max_rate = 1472000000,
 	#else
 	.max_rate  = 1000000000,
 	#endif
@@ -2163,7 +2163,7 @@ static struct clk tegra_clk_cclk = {
 	#if defined(CONFIG_TEGRA_OVERCLOCK)
 	/* blocked for being unstable, new max set below */
 	/* .max_rate = 1504000000, */
-	.max_rate = 1408000000,
+	.max_rate = 1472000000,
 	#else
 	.max_rate = 1000000000,
 	#endif
@@ -2185,7 +2185,7 @@ static struct clk tegra_clk_virtual_cpu = {
 	#if defined(CONFIG_TEGRA_OVERCLOCK)
 	/* blocked for being unstable new max set below */
 	/* .max_rate  = 1504000000, */
-	.max_rate  = 1408000000,
+	.max_rate  = 1472000000,
 	#else
 	.max_rate  = 1000000000,
 	#endif
@@ -2602,10 +2602,10 @@ static struct tegra_sku_rate_limit sku_limits[] =
 	RATE_LIMIT("pll_x",	750000000, 0x07, 0x10),
 
 	#if defined(CONFIG_TEGRA_OVERCLOCK)
-	/* Changed to 1.408 instead of 1.504 for stability */
-	RATE_LIMIT("cpu",  1408000000, 0x04, 0x08, 0x0F),
-	RATE_LIMIT("cclk",  1408000000, 0x04, 0x08, 0x0F),
-	RATE_LIMIT("pll_x",  1408000000, 0x04, 0x08, 0x0F),
+	/* Changed to 1.472 instead of 1.504 for testing */
+	RATE_LIMIT("cpu",  1472000000, 0x04, 0x08, 0x0F),
+	RATE_LIMIT("cclk",  1472000000, 0x04, 0x08, 0x0F),
+	RATE_LIMIT("pll_x",  1472000000, 0x04, 0x08, 0x0F),
 	#else
 	RATE_LIMIT("cpu",	1000000000, 0x04, 0x08, 0x0F),
 	RATE_LIMIT("cclk",	1000000000, 0x04, 0x08, 0x0F),
@@ -2728,7 +2728,7 @@ static struct cpufreq_frequency_table freq_table_1p2GHz[] = {
 		{ 6, 912000 },
 		{ 7, 1000000 },
 		{ 8, 1200000 },
-		{ 9, 1408000 },
+		{ 9, 1472000 },
 	/* blocked for stability */
 		/*{ 10, 1504000 },*/
 		{ 10, CPUFREQ_TABLE_END },
