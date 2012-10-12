@@ -444,11 +444,7 @@ static int wait_key_ctrl(struct tegra_dc_hdmi_data *hdmi, u32 mask, u32 value)
 	do {
 		msleep(1);
 		ctrl = tegra_hdmi_readl(hdmi, HDMI_NV_PDISP_KEY_CTRL);
-#ifdef CONFIG_MACH_ANTARES
-		if (!!(ctrl & (mask)) == value)
-#else
 		if (((ctrl ^ value) & mask) == 0)
-#endif
 			break;
 	} while (--retries);
 	if (!retries) {
@@ -669,11 +665,7 @@ static int load_kfuse(struct tegra_dc_hdmi_data *hdmi)
 	tegra_hdmi_writel(hdmi, ctrl | PKEY_REQUEST_RELOAD_TRIGGER
 					| LOCAL_KEYS , HDMI_NV_PDISP_KEY_CTRL);
 
-#ifdef CONFIG_MACH_ANTARES
-	e = wait_key_ctrl(hdmi, PKEY_LOADED, 1);
-#else
 	e = wait_key_ctrl(hdmi, PKEY_LOADED, PKEY_LOADED);
-#endif
 	if (e) {
 		nvhdcp_err("key reload timeout\n");
 		return -EIO;
@@ -1015,11 +1007,11 @@ failure:
 	if(nvhdcp->fail_count > 5) {
 	        nvhdcp_err("nvhdcp failure - too many failures, giving up!\n");
 	} else {
-		nvhdcp_err("nvhdcp failure - renegotiating in 1.75 seconds\n");
+		nvhdcp_err("nvhdcp failure - renegotiating in 1 second\n");
 		if (!nvhdcp_is_plugged(nvhdcp))
 			goto lost_hdmi;
 		queue_delayed_work(nvhdcp->downstream_wq, &nvhdcp->work,
-						msecs_to_jiffies(1750));
+						msecs_to_jiffies(1000));
 	}
 
 lost_hdmi:

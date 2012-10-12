@@ -134,7 +134,11 @@ static int tegra_fb_set_par(struct fb_info *info)
 		 * client requests it
 		 */
 		stereo = !!(var->vmode & info->mode->vmode &
+#ifndef CONFIG_TEGRA_HDMI_74MHZ_LIMIT
 					FB_VMODE_STEREO_FRAME_PACK);
+#else
+					FB_VMODE_STEREO_LEFT_RIGHT);
+#endif
 
 		tegra_dc_set_fb_mode(tegra_fb->win->dc, info->mode, stereo);
 
@@ -361,8 +365,6 @@ void tegra_fb_update_monspecs(struct tegra_fb_info *fb_info,
 	mutex_unlock(&fb_info->info->lock);
 }
 
-static bool not_booting = 0;
-
 struct tegra_fb_info *tegra_fb_register(struct nvhost_device *ndev,
 					struct tegra_dc *dc,
 					struct tegra_fb_data *fb_data,
@@ -463,34 +465,20 @@ struct tegra_fb_info *tegra_fb_register(struct nvhost_device *ndev,
 
 	if (fb_mem)
 		tegra_fb_set_par(info);
+
 	if (register_framebuffer(info)) {
 		dev_err(&ndev->dev, "failed to register framebuffer\n");
 		ret = -ENODEV;
 		goto err_iounmap_fb;
 	}
+
 	tegra_fb->info = info;
 
 	dev_info(&ndev->dev, "probed\n");
 
-	if (not_booting & fb_data->flags & TEGRA_FB_FLIP_ON_PROBE) {
-		not_booting = 1;
+	if (fb_data->flags & TEGRA_FB_FLIP_ON_PROBE) {
 		tegra_dc_update_windows(&tegra_fb->win, 1);
 		tegra_dc_sync_windows(&tegra_fb->win, 1);
-	}
-
-	if (dc->mode.pclk > 1000) {
-		struct tegra_dc_mode *mode = &dc->mode;
-
-		if (dc->out->flags & TEGRA_DC_OUT_ONE_SHOT_MODE)
-			info->var.pixclock = KHZ2PICOS(mode->rated_pclk / 1000);
-		else
-			info->var.pixclock = KHZ2PICOS(mode->pclk / 1000);
-		info->var.left_margin = mode->h_back_porch;
-		info->var.right_margin = mode->h_front_porch;
-		info->var.upper_margin = mode->v_back_porch;
-		info->var.lower_margin = mode->v_front_porch;
-		info->var.hsync_len = mode->h_sync_width;
-		info->var.vsync_len = mode->v_sync_width;
 	}
 
 	return tegra_fb;

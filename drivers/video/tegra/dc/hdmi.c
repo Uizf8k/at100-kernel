@@ -48,7 +48,6 @@
 #include "hdmi.h"
 #include "edid.h"
 #include "nvhdcp.h"
-#include <linux/i2c/atmel_maxtouch.h>
 
 /* datasheet claims this will always be 216MHz */
 #define HDMI_AUDIOCLK_FREQ		216000000
@@ -95,7 +94,6 @@ struct tegra_dc_hdmi_data {
 	bool				clk_enabled;
 	unsigned			audio_freq;
 	unsigned			audio_source;
-	bool				audio_inject_null;
 
 	bool				dvi;
 };
@@ -290,17 +288,10 @@ const struct tdms_config tdms_config[] = {
 		PE_CURRENT1(PE_CURRENT_0_0_mA) |
 		PE_CURRENT2(PE_CURRENT_0_0_mA) |
 		PE_CURRENT3(PE_CURRENT_0_0_mA),
-#ifdef CONFIG_MACH_ANTARES
 	.drive_current = DRIVE_CURRENT_LANE0(DRIVE_CURRENT_7_125_mA) |
 		DRIVE_CURRENT_LANE1(DRIVE_CURRENT_7_125_mA) |
 		DRIVE_CURRENT_LANE2(DRIVE_CURRENT_7_125_mA) |
 		DRIVE_CURRENT_LANE3(DRIVE_CURRENT_7_125_mA),
-#else
-	.drive_current = DRIVE_CURRENT_LANE0(DRIVE_CURRENT_3_750_mA) |
-		DRIVE_CURRENT_LANE1(DRIVE_CURRENT_3_750_mA) |
-		DRIVE_CURRENT_LANE2(DRIVE_CURRENT_3_750_mA) |
-		DRIVE_CURRENT_LANE3(DRIVE_CURRENT_3_750_mA),
-#endif
 	},
 	{ /* 720p modes */
 	.pclk = 74250000,
@@ -311,17 +302,10 @@ const struct tdms_config tdms_config[] = {
 		PE_CURRENT1(PE_CURRENT_6_0_mA) |
 		PE_CURRENT2(PE_CURRENT_6_0_mA) |
 		PE_CURRENT3(PE_CURRENT_6_0_mA),
-#ifdef CONFIG_MACH_ANTARES
 	.drive_current = DRIVE_CURRENT_LANE0(DRIVE_CURRENT_7_125_mA) |
 		DRIVE_CURRENT_LANE1(DRIVE_CURRENT_7_125_mA) |
 		DRIVE_CURRENT_LANE2(DRIVE_CURRENT_7_125_mA) |
 		DRIVE_CURRENT_LANE3(DRIVE_CURRENT_7_125_mA),
-#else
-	.drive_current = DRIVE_CURRENT_LANE0(DRIVE_CURRENT_3_750_mA) |
-		DRIVE_CURRENT_LANE1(DRIVE_CURRENT_3_750_mA) |
-		DRIVE_CURRENT_LANE2(DRIVE_CURRENT_3_750_mA) |
-		DRIVE_CURRENT_LANE3(DRIVE_CURRENT_3_750_mA),
-#endif
 	},
 	{ /* 1080p modes */
 	.pclk = INT_MAX,
@@ -332,17 +316,10 @@ const struct tdms_config tdms_config[] = {
 		PE_CURRENT1(PE_CURRENT_6_0_mA) |
 		PE_CURRENT2(PE_CURRENT_6_0_mA) |
 		PE_CURRENT3(PE_CURRENT_6_0_mA),
-#ifdef CONFIG_MACH_ANTARES
 	.drive_current = DRIVE_CURRENT_LANE0(DRIVE_CURRENT_7_125_mA) |
 		DRIVE_CURRENT_LANE1(DRIVE_CURRENT_7_125_mA) |
 		DRIVE_CURRENT_LANE2(DRIVE_CURRENT_7_125_mA) |
 		DRIVE_CURRENT_LANE3(DRIVE_CURRENT_7_125_mA),
-#else
-	.drive_current = DRIVE_CURRENT_LANE0(DRIVE_CURRENT_3_750_mA) |
-		DRIVE_CURRENT_LANE1(DRIVE_CURRENT_3_750_mA) |
-		DRIVE_CURRENT_LANE2(DRIVE_CURRENT_3_750_mA) |
-		DRIVE_CURRENT_LANE3(DRIVE_CURRENT_3_750_mA),
-#endif
 	},
 };
 #endif
@@ -697,18 +674,21 @@ static int tegra_dc_calc_clock_per_frame(const struct fb_videomode *mode)
 static bool tegra_dc_hdmi_mode_equal(const struct fb_videomode *mode1,
 					const struct fb_videomode *mode2)
 {
-	int clock_per_frame1 = tegra_dc_calc_clock_per_frame(mode1);
-	int clock_per_frame2 = tegra_dc_calc_clock_per_frame(mode2);
+	int clock_per_frame = tegra_dc_calc_clock_per_frame(mode1);
 
 	/* allows up to 1Hz of pixclock difference */
-	return (clock_per_frame1 == clock_per_frame2 &&
-			mode1->xres == mode2->xres &&
+	if (mode1->pixclock != mode2->pixclock) {
+		return (mode1->xres == mode2->xres &&
 			mode1->yres == mode2->yres &&
 			mode1->vmode == mode2->vmode &&
-			(mode1->pixclock == mode2->pixclock ||
 			(abs(PICOS2KHZ(mode1->pixclock) -
 			PICOS2KHZ(mode2->pixclock)) *
-			1000 / clock_per_frame1 <= 1)));
+			1000 / clock_per_frame <= 1));
+	} else {
+		return (mode1->xres == mode2->xres &&
+			mode1->yres == mode2->yres &&
+			mode1->vmode == mode2->vmode);
+	}
 }
 
 static bool tegra_dc_hdmi_valid_pixclock(const struct tegra_dc *dc,
@@ -797,14 +777,14 @@ bool tegra_dc_hdmi_detect_test(struct tegra_dc *dc, unsigned char *edid_ptr)
 	struct fb_monspecs specs;
 	struct tegra_dc_hdmi_data *hdmi = tegra_dc_get_outdata(dc);
 
-	if (!hdmi || !edid_ptr) {
+	if (!dc || !hdmi || !edid_ptr) {
 		dev_err(&dc->ndev->dev, "HDMI test failed to get arguments.\n");
 		return false;
 	}
 
 	err = tegra_edid_get_monspecs_test(hdmi->edid, &specs, edid_ptr);
 	if (err < 0) {
-		dev_err(&dc->ndev->dev, "error reading edid\n");
+		//dev_err(&dc->ndev->dev, "error reading edid\n");
 		goto fail;
 	}
 
@@ -824,7 +804,9 @@ fail:
 #ifdef CONFIG_SWITCH
 	switch_set_state(&hdmi->hpd_switch, 0);
 #endif
+#ifdef CONFIG_TEGRA_NVHDCP
 	tegra_nvhdcp_set_plug(hdmi->nvhdcp, 0);
+#endif
 	return false;
 }
 EXPORT_SYMBOL(tegra_dc_hdmi_detect_test);
@@ -834,38 +816,31 @@ static bool tegra_dc_hdmi_detect(struct tegra_dc *dc)
 	struct tegra_dc_hdmi_data *hdmi = tegra_dc_get_outdata(dc);
 	struct fb_monspecs specs;
 	int err;
-	int retry_count=0;
+#if defined(CONFIG_ARCH_ACER_T30) || defined(CONFIG_ARCH_ACER_T20)
+	int i;
+#endif
 
 	if (!tegra_dc_hdmi_hpd(dc))
 		goto fail;
 
-#if 1
-	for(retry_count=0;retry_count<3;retry_count++)
-	{
+#if defined(CONFIG_ARCH_ACER_T30) || defined(CONFIG_ARCH_ACER_T20)
+	for (i = 0; i < 7; i++) {
 		err = tegra_edid_get_monspecs(hdmi->edid, &specs);
-		if(err < 0)
-		{
-			dev_err(&dc->ndev->dev, "error reading edid and count =%d\n",retry_count);
-		}
-		else
-		{
+		if (err >= 0) {
 			break;
-		}
-
-		if ( (err < 0) && (retry_count>=2) )
-		{
-			goto fail;
+		} else if (i < 6) {
+			pr_err("failed to read edid, wait 50ms and try again...\n");
+			mdelay(50);
 		}
 	}
+#else
+	err = tegra_edid_get_monspecs(hdmi->edid, &specs);
 #endif
 
-#if 0
-	err = tegra_edid_get_monspecs(hdmi->edid, &specs);
 	if (err < 0) {
-		dev_err(&dc->ndev->dev, "error reading edid\n");
+		//dev_err(&dc->ndev->dev, "error reading edid\n");
 		goto fail;
 	}
-#endif
 
 	err = tegra_edid_get_eld(hdmi->edid, &hdmi->eld);
 	if (err < 0) {
@@ -875,9 +850,7 @@ static bool tegra_dc_hdmi_detect(struct tegra_dc *dc)
 	hdmi->eld_retrieved = true;
 
 	tegra_dc_hdmi_detect_config(dc, &specs);
-#if defined(CONFIG_TOUCHSCREEN_HDMI)
-        mxt_hdmi_manager(1);
-#endif
+
 	return true;
 
 fail:
@@ -885,9 +858,8 @@ fail:
 #ifdef CONFIG_SWITCH
 	switch_set_state(&hdmi->hpd_switch, 0);
 #endif
+#ifdef CONFIG_TEGRA_NVHDCP
 	tegra_nvhdcp_set_plug(hdmi->nvhdcp, 0);
-#if defined(CONFIG_TOUCHSCREEN_HDMI)
-        mxt_hdmi_manager(0);
 #endif
 	return false;
 }
@@ -936,7 +908,9 @@ static void tegra_dc_hdmi_suspend(struct tegra_dc *dc)
 	struct tegra_dc_hdmi_data *hdmi = tegra_dc_get_outdata(dc);
 	unsigned long flags;
 
+#ifdef CONFIG_TEGRA_NVHDCP
 	tegra_nvhdcp_suspend(hdmi->nvhdcp);
+#endif
 	spin_lock_irqsave(&hdmi->suspend_lock, flags);
 	hdmi->suspended = true;
 	spin_unlock_irqrestore(&hdmi->suspend_lock, flags);
@@ -958,7 +932,9 @@ static void tegra_dc_hdmi_resume(struct tegra_dc *dc)
 				   msecs_to_jiffies(30));
 
 	spin_unlock_irqrestore(&hdmi->suspend_lock, flags);
+#ifdef CONFIG_TEGRA_NVHDCP
 	tegra_nvhdcp_resume(hdmi->nvhdcp);
+#endif
 }
 
 static ssize_t underscan_show(struct device *dev,
@@ -1119,6 +1095,7 @@ static int tegra_dc_hdmi_init(struct tegra_dc *dc)
 	tegra_dc_set_outdata(dc, hdmi);
 
 	dc_hdmi = hdmi;
+#ifdef CONFIG_TEGRA_NVHDCP
 	/* boards can select default content protection policy */
 	if (dc->out->flags & TEGRA_DC_OUT_NVHDCP_POLICY_ON_DEMAND) {
 		tegra_nvhdcp_set_policy(hdmi->nvhdcp,
@@ -1127,6 +1104,7 @@ static int tegra_dc_hdmi_init(struct tegra_dc *dc)
 		tegra_nvhdcp_set_policy(hdmi->nvhdcp,
 			TEGRA_NVHDCP_POLICY_ALWAYS_ON);
 	}
+#endif
 
 	tegra_dc_hdmi_debug_create(hdmi);
 
@@ -1134,8 +1112,8 @@ static int tegra_dc_hdmi_init(struct tegra_dc *dc)
 
 #ifdef CONFIG_TEGRA_NVHDCP
 err_edid_destroy:
-#endif
 	tegra_edid_destroy(hdmi->edid);
+#endif
 err_free_irq:
 	free_irq(gpio_to_irq(dc->out->hotplug_gpio), dc);
 err_put_clock:
@@ -1182,7 +1160,9 @@ static void tegra_dc_hdmi_destroy(struct tegra_dc *dc)
 	clk_put(hdmi->disp1_clk);
 	clk_put(hdmi->disp2_clk);
 	tegra_edid_destroy(hdmi->edid);
+#ifdef CONFIG_TEGRA_NVHDCP
 	tegra_nvhdcp_destroy(hdmi->nvhdcp);
+#endif
 
 	kfree(hdmi);
 
@@ -1314,9 +1294,6 @@ static int tegra_dc_hdmi_setup_audio(struct tegra_dc *dc, unsigned audio_freq,
 		a_source = AUDIO_CNTRL0_SOURCE_SELECT_SPDIF;
 
 #if !defined(CONFIG_ARCH_TEGRA_2x_SOC)
-	if (hdmi->audio_inject_null)
-		a_source |= AUDIO_CNTRL0_INJECT_NULLSMPL;
-
 	tegra_hdmi_writel(hdmi,a_source,
 			  HDMI_NV_PDISP_SOR_AUDIO_CNTRL0_0);
 	tegra_hdmi_writel(hdmi,
@@ -1420,31 +1397,6 @@ int tegra_hdmi_setup_audio_freq_source(unsigned audio_freq, unsigned audio_sourc
 EXPORT_SYMBOL(tegra_hdmi_setup_audio_freq_source);
 
 #if !defined(CONFIG_ARCH_TEGRA_2x_SOC)
-int tegra_hdmi_audio_null_sample_inject(bool on)
-{
-	struct tegra_dc_hdmi_data *hdmi = dc_hdmi;
-	unsigned int val = 0;
-
-	if (!hdmi)
-		return -EAGAIN;
-
-	if (hdmi->audio_inject_null != on) {
-		hdmi->audio_inject_null = on;
-		if (hdmi->clk_enabled) {
-			val = tegra_hdmi_readl(hdmi,
-				HDMI_NV_PDISP_SOR_AUDIO_CNTRL0_0);
-			val &= ~AUDIO_CNTRL0_INJECT_NULLSMPL;
-			if (on)
-				val |= AUDIO_CNTRL0_INJECT_NULLSMPL;
-			tegra_hdmi_writel(hdmi,val,
-				HDMI_NV_PDISP_SOR_AUDIO_CNTRL0_0);
-		}
-	}
-
-	return 0;
-}
-EXPORT_SYMBOL(tegra_hdmi_audio_null_sample_inject);
-
 int tegra_hdmi_setup_hda_presence()
 {
 	struct tegra_dc_hdmi_data *hdmi = dc_hdmi;
@@ -1574,7 +1526,11 @@ static void tegra_dc_hdmi_setup_avi_infoframe(struct tegra_dc *dc, bool dvi)
 		avi.vic = 0;
 	}
 
-
+#if defined(CONFIG_ARCH_ACER_T30) || defined(CONFIG_ARCH_ACER_T20)
+	if (hdmi->eld.vsdb) {
+		avi.s = HDMI_AVI_S_UNDERSCAN;
+	}
+#endif
 	tegra_dc_hdmi_write_infopack(dc, HDMI_NV_PDISP_HDMI_AVI_INFOFRAME_HEADER,
 				     HDMI_INFOFRAME_TYPE_AVI,
 				     HDMI_AVI_VERSION,
@@ -1864,14 +1820,18 @@ static void tegra_dc_hdmi_enable(struct tegra_dc *dc)
 	tegra_dc_writel(dc, GENERAL_ACT_REQ << 8, DC_CMD_STATE_CONTROL);
 	tegra_dc_writel(dc, GENERAL_ACT_REQ, DC_CMD_STATE_CONTROL);
 
+#ifdef CONFIG_TEGRA_NVHDCP
 	tegra_nvhdcp_set_plug(hdmi->nvhdcp, 1);
+#endif
 }
 
 static void tegra_dc_hdmi_disable(struct tegra_dc *dc)
 {
 	struct tegra_dc_hdmi_data *hdmi = tegra_dc_get_outdata(dc);
 
+#ifdef CONFIG_TEGRA_NVHDCP
 	tegra_nvhdcp_set_plug(hdmi->nvhdcp, 0);
+#endif
 
 #if !defined(CONFIG_ARCH_TEGRA_2x_SOC)
 	tegra_hdmi_writel(hdmi, 0, HDMI_NV_PDISP_SOR_AUDIO_HDA_PRESENSE_0);

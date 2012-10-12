@@ -28,8 +28,6 @@
 #include "dc_priv.h"
 #include "nvsd.h"
 
-// TSB_MMP is defined in "kernel/arch/arm/mach-tegra/include/mach/dc.h"
-
 static ssize_t mode_show(struct device *device,
 	struct device_attribute *attr, char *buf)
 {
@@ -284,96 +282,6 @@ static ssize_t mode_3d_store(struct device *dev,
 static DEVICE_ATTR(stereo_mode,
 	S_IRUGO|S_IWUSR, mode_3d_show, mode_3d_store);
 
-#ifdef TSB_MMP
-static ssize_t gamma_show(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	struct nvhost_device *ndev = to_nvhost_device(dev);
-	struct tegra_dc *dc = nvhost_get_drvdata(ndev);
-	struct tegra_dc_out *dc_out = dc->out;
-	/* return snprintf(buf, PAGE_SIZE, "%d\n", dc_out->gamma); */
-	return snprintf(buf, PAGE_SIZE, "%d %d %d %d\n", dc_out->gamma, dc_out->r_ratio, dc_out->g_ratio, dc_out->b_ratio);
-}
-
-static ssize_t gamma_store(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t cnt)
-{
-	struct nvhost_device *ndev = to_nvhost_device(dev);
-	struct tegra_dc *dc = nvhost_get_drvdata(ndev);
-	int gamma_value;
-    int r_ratio, g_ratio, b_ratio;
-
-	if (!dc->enabled) {
-		/* dev_err(&dc->ndev->dev, "Failed to get dc.\n"); */
-		return -EFAULT;
-	}
-
-	/* if (sscanf(buf, "%d", &gamma_value) != 1) { */
-	if (sscanf(buf, "%d%d%d%d", &gamma_value, &r_ratio, &g_ratio, &b_ratio) != 4) {
-		pr_err("Invalid property value for gamma. sscanf\n");
-		return -EINVAL;
-	}
-
-	/* if (tegra_dc_store_gamma(dc, gamma_value)){ */
-	if (tegra_dc_store_gamma(dc, gamma_value, r_ratio, g_ratio, b_ratio)){
-		pr_err("Invalid property value for gamma. tegra_dc_store_gamma\n");
-		return -EINVAL;
-	}
-// for mmp
-    /* dev_info(&dc->ndev->dev, "mmp:sysfs gamma = %d rgb=%d:%d:%d\n", gamma_value, r_ratio, g_ratio, b_ratio); */
-//
-	return cnt;
-}
-
-static DEVICE_ATTR(gamma,
-	S_IRUGO|S_IWUSR, gamma_show, gamma_store);
-
-static ssize_t dvcontrol_show(struct device *dev,
-       struct device_attribute *attr, char *buf)
-{
-       struct nvhost_device *ndev = to_nvhost_device(dev);
-       struct tegra_dc *dc = nvhost_get_drvdata(ndev);
-       struct tegra_dc_out *dc_out = dc->out;
-       return snprintf(buf, PAGE_SIZE, "%d\n", dc_out->dvcontrol);
-}
-
-static ssize_t dvcontrol_store(struct device *dev,
-       struct device_attribute *attr, const char *buf, size_t cnt)
-{
-       struct nvhost_device *ndev = to_nvhost_device(dev);
-       struct tegra_dc *dc = nvhost_get_drvdata(ndev);
-       int dvcontrol_value;
-
-dev_info(&dc->ndev->dev, "mmp:sysfs dvcontrol start\n"); 
-
-       if (!dc->enabled) {
-dev_info(&dc->ndev->dev, "mmp:sysfs dvcontrol error !enable\n"); 
-               dev_err(&dc->ndev->dev, "Failed to get dc.\n");
-               return -EFAULT;
-       }
-
-       if (sscanf(buf, "%d", &dvcontrol_value) != 1) {
-dev_info(&dc->ndev->dev, "mmp:sysfs dvcontrol error sscanf\n"); 
-               pr_err("Invalid property value for dvcontrol. sscanf\n");
-               return -EINVAL;
-       }
-
-       if (tegra_dc_store_dvcontrol(dc, dvcontrol_value)){
-dev_info(&dc->ndev->dev, "mmp:sysfs dvcontrol error tegra_dc_store_dvcontrol\n"); 
-               pr_err("Invalid property value for dvcontrol. tegra_dc_store_dvcontrol\n");
-               return -EINVAL;
-       }
-       // for mmp
-       dev_info(&dc->ndev->dev, "mmp:sysfs dvcontrol value = %d\n", dvcontrol_value); 
-       //
-
-       return cnt;
-}
-
-static DEVICE_ATTR(dvcontrol,
-       S_IRUGO|S_IWUSR, dvcontrol_show, dvcontrol_store);
-#endif // TSB_MMP
-
 void __devexit tegra_dc_remove_sysfs(struct device *dev)
 {
 	struct nvhost_device *ndev = to_nvhost_device(dev);
@@ -384,10 +292,6 @@ void __devexit tegra_dc_remove_sysfs(struct device *dev)
 	device_remove_file(dev, &dev_attr_enable);
 	device_remove_file(dev, &dev_attr_stats_enable);
 	device_remove_file(dev, &dev_attr_crc_checksum_latched);
-#ifdef TSB_MMP
-	device_remove_file(dev, &dev_attr_gamma);
-    device_remove_file(dev, &dev_attr_dvcontrol);
-#endif
 
 	if (dc->out->stereo) {
 		device_remove_file(dev, &dev_attr_stereo_orientation);
@@ -409,11 +313,6 @@ void tegra_dc_create_sysfs(struct device *dev)
 	error |= device_create_file(dev, &dev_attr_enable);
 	error |= device_create_file(dev, &dev_attr_stats_enable);
 	error |= device_create_file(dev, &dev_attr_crc_checksum_latched);
-#ifdef TSB_MMP
-    error |= device_create_file(dev, &dev_attr_gamma);
-    error |= device_create_file(dev, &dev_attr_dvcontrol);
-#endif
-
 
 	if (dc->out->stereo) {
 		error |= device_create_file(dev, &dev_attr_stereo_orientation);

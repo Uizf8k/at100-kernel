@@ -16,14 +16,11 @@
  */
 
 #include <linux/kernel.h>
-#include <linux/fb.h>
 
 #include <mach/dc.h>
-#include <mach/fb.h>
 
 #include "dc_reg.h"
 #include "dc_priv.h"
-#include "edid.h"
 
 
 static const u32 tegra_dc_rgb_enable_partial_pintable[] = {
@@ -93,52 +90,6 @@ static const u32 tegra_dc_rgb_disable_pintable[] = {
 	DC_COM_PIN_OUTPUT_SELECT6,	0x00000000,
 };
 
-static int tegra_dc_rgb_init(struct tegra_dc *dc)
-{
-	struct tegra_edid *edid;
-	struct fb_monspecs specs;
-	int err;
-
-	edid = tegra_edid_create(dc->out->dcc_bus);
-	if (IS_ERR_OR_NULL(edid)) {
-		dev_err(&dc->ndev->dev, "rgb: can't create edid\n");
-		err = PTR_ERR(edid);
-		return err;
-	}
-
-	err = tegra_edid_get_monspecs(edid, &specs);
-	if (err < 0) {
-		dev_err(&dc->ndev->dev, "error reading edid\n");
-		return err;
-	}
-
-	if (dc->pdata->default_out->n_modes > 0) {
-		dc->mode.pclk = PICOS2KHZ(specs.modedb->pixclock) * 1000;
-		dc->mode.h_ref_to_sync = 1;
-		dc->mode.v_ref_to_sync = 1;
-		dc->mode.h_sync_width = specs.modedb->hsync_len;
-		dc->mode.v_sync_width = specs.modedb->vsync_len;
-		dc->mode.h_back_porch = specs.modedb->left_margin;
-		dc->mode.v_back_porch = specs.modedb->upper_margin;
-		dc->mode.h_active = specs.modedb->xres;
-		dc->mode.v_active = specs.modedb->yres;
-		dc->mode.h_front_porch = specs.modedb->right_margin;
-		dc->mode.v_front_porch = specs.modedb->lower_margin;
-	}
-
-	if (dc->pdata->fb) {
-		dc->pdata->fb->xres = specs.modedb->xres;
-		dc->pdata->fb->yres = specs.modedb->yres;
-	}
-	
-	fb_destroy_modedb(specs.modedb);
-
-	dc->out->width = specs.max_x * 10;
-	dc->out->height = specs.max_y * 10;
-
-	return 0;
-}
-
 void tegra_dc_rgb_enable(struct tegra_dc *dc)
 {
 	int i;
@@ -203,7 +154,6 @@ void tegra_dc_rgb_disable(struct tegra_dc *dc)
 }
 
 struct tegra_dc_out_ops tegra_dc_rgb_ops = {
-	.init = tegra_dc_rgb_init,
 	.enable = tegra_dc_rgb_enable,
 	.disable = tegra_dc_rgb_disable,
 };

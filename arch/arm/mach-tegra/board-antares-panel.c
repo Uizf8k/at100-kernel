@@ -217,8 +217,8 @@ static struct tegra_dc_mode antares_panel_modes[] = {
 		.v_sync_width = 4,
 		.h_back_porch = 58,
 		.v_back_porch = 4,
-		.h_active = 1366,
-		.v_active = 768,
+		.h_active = 1280,
+		.v_active = 800,
 		.h_front_porch = 58,
 		.v_front_porch = 4,
 	},
@@ -226,8 +226,8 @@ static struct tegra_dc_mode antares_panel_modes[] = {
 
 static struct tegra_fb_data antares_fb_data = {
 	.win		= 0,
-	.xres		= 1366,
-	.yres		= 768,
+	.xres		= 1280,
+	.yres		= 800,
 	.bits_per_pixel	= 32,
 	.flags		= TEGRA_FB_FLIP_ON_PROBE,
 };
