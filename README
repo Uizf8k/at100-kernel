@@ -1,5 +1,3 @@
-Toshiba Thrive AT100 Jelly Bean kernel "Balthesaur". Branched from the trunk kernel source "Caspar". Jelly Bean only, may not work at all with ICS. Intended only for the 10" Toshiba Thrive. Original source from Toshiba, modified by myself, tybar and jbettcher for use in Jelly Bean, and specifically, CM10. Freel free to do as you wish, and if you find any improvements, please let me know! Side note, 1.5GHz is currently unstable, it will likely instantly freeze.
-
 	Linux kernel release 2.6.xx <http://kernel.org/>
 
 These are the release notes for Linux version 2.6.  Read them carefully,
