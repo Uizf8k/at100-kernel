@@ -2762,6 +2762,7 @@ static struct tegra_cpufreq_table_data cpufreq_tables[] = {
 	{ freq_table_1p2GHz, 2, 7 },
 	#if defined(CONFIG_TEGRA_OVERCLOCK)
 	{ freq_table_1p5GHz, 2, 6 },
+	{ freq_table_1p6GHz, 2, 10 }, 
 	#endif
 };
 
