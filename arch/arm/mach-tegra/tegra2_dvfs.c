@@ -62,6 +62,7 @@ static const int core_speedo_nominal_millivolts[] =
 	{ 1300, 1400, 1300  }; 
 	 #else 
 	{ 1225, 1225, 1300 };
+	#endif
 
 #define KHZ 1000
 #define MHZ 1000000
