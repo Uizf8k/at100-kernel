@@ -1,3 +1,28 @@
+/*
+ * ROW (Read Over Write) I/O scheduler.
+ *
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/* See Documentation/block/row-iosched.txt */
+
+#include <linux/kernel.h>
+#include <linux/fs.h>
+#include <linux/blkdev.h>
+#include <linux/elevator.h>
+#include <linux/bio.h>
+#include <linux/module.h>
+#include <linux/slab.h>
+#include <linux/init.h>
 #include <linux/compiler.h>
 #include <linux/blktrace_api.h>
 #include <linux/jiffies.h>
@@ -12,7 +37,7 @@
  *
  */
 enum row_queue_prio {
-  ROWQ_PRIO_HIGH_READ = 0,
+	ROWQ_PRIO_HIGH_READ = 0,
 	ROWQ_PRIO_REG_READ,
 	ROWQ_PRIO_HIGH_SWRITE,
 	ROWQ_PRIO_REG_SWRITE,
